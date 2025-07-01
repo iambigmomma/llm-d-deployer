@@ -24,8 +24,6 @@ sampleApplication:
       - "--enforce-eager" # Disable CUDA graph to save memory
       - "--tensor-parallel-size"
       - "1" # Single GPU setup
-      - "--kv-cache-dtype"
-      - "fp8" # Use FP8 for KV cache to save memory
       - "--block-size"
       - "16" # Smaller block size for better memory efficiency
 
@@ -39,8 +37,6 @@ sampleApplication:
       - "--enforce-eager"
       - "--tensor-parallel-size"
       - "1"
-      - "--kv-cache-dtype"
-      - "fp8"
       - "--block-size"
       - "16"
 

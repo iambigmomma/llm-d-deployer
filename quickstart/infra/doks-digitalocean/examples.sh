@@ -69,7 +69,7 @@ print_header "📊 Monitoring Access Examples"
 echo -e "${GREEN}Example 7:${NC} Access Grafana dashboard"
 echo -e "${YELLOW}Commands:${NC}"
 echo "  kubectl port-forward -n llm-d-monitoring svc/prometheus-grafana 3000:80"
-echo "  # Open http://localhost:3000 (admin/admin)"
+echo "  # Open http://localhost:3000 (admin/prom-operator)"
 echo ""
 
 echo -e "${GREEN}Example 8:${NC} Access Prometheus"
