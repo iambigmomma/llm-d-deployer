@@ -3,15 +3,33 @@
 # Memory allocation: ~17GB available (85% of 20GB)
 
 sampleApplication:
+  # Resource requests and limits for RTX 4000 Ada
+  resources:
+    limits:
+      nvidia.com/gpu: "1"
+      memory: "32Gi" # Host memory for RTX 4000 Ada nodes
+      cpu: "8"
+    requests:
+      nvidia.com/gpu: "1"
+      memory: "16Gi"
+      cpu: "4"
+
+  # Decode configuration with memory optimizations
   decode:
     extraArgs:
       - "--max-model-len"
-      - "8192"                    # Conservative sequence length for 20GB VRAM
+      - "8192" # Conservative sequence length for 20GB VRAM
       - "--gpu-memory-utilization"
-      - "0.85"                    # Use 85% of GPU memory
-      - "--enforce-eager"         # Disable CUDA graph to save memory
+      - "0.85" # Use 85% of GPU memory
+      - "--enforce-eager" # Disable CUDA graph to save memory
       - "--tensor-parallel-size"
-      - "1"                       # Single GPU setup
+      - "1" # Single GPU setup
+      - "--kv-cache-dtype"
+      - "fp8" # Use FP8 for KV cache to save memory
+      - "--block-size"
+      - "16" # Smaller block size for better memory efficiency
+
+  # Prefill configuration with memory optimizations
   prefill:
     extraArgs:
       - "--max-model-len"
@@ -21,6 +39,10 @@ sampleApplication:
       - "--enforce-eager"
       - "--tensor-parallel-size"
       - "1"
+      - "--kv-cache-dtype"
+      - "fp8"
+      - "--block-size"
+      - "16"
 
 # Enable comprehensive metrics collection
 modelservice:
@@ -36,15 +58,3 @@ modelservice:
   vllm:
     metrics:
       enabled: true
-
-# Resource requests and limits
-sampleApplication:
-  resources:
-    limits:
-      nvidia.com/gpu: "1"
-      memory: "32Gi"              # Host memory for RTX 4000 Ada nodes
-      cpu: "8"
-    requests:
-      nvidia.com/gpu: "1"
-      memory: "16Gi"
-      cpu: "4" 
