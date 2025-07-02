@@ -233,6 +233,42 @@ install_llm_d() {
     fi
 }
 
+# Check if monitoring is already installed
+check_monitoring_status() {
+    print_status "Checking monitoring stack status..."
+    
+    # Check if namespace exists
+    if ! kubectl get namespace llm-d-monitoring &> /dev/null; then
+        print_status "Monitoring namespace does not exist"
+        return 1
+    fi
+    
+    # Check if Prometheus helm release exists
+    if ! helm list -n llm-d-monitoring | grep -q "prometheus"; then
+        print_status "Prometheus helm release not found"
+        return 1
+    fi
+    
+    # Check if Prometheus and Grafana pods are ready
+    local prometheus_ready
+    prometheus_ready=$(kubectl get pods -n llm-d-monitoring -l app.kubernetes.io/name=prometheus --no-headers 2>/dev/null | grep "Running" | wc -l || echo "0")
+    
+    local grafana_ready
+    grafana_ready=$(kubectl get pods -n llm-d-monitoring -l app.kubernetes.io/name=grafana --no-headers 2>/dev/null | grep "Running" | wc -l || echo "0")
+    
+    if [[ "${prometheus_ready}" -gt 0 ]] && [[ "${grafana_ready}" -gt 0 ]]; then
+        print_success "Monitoring stack is already installed and running"
+        print_status "  Prometheus pods running: ${prometheus_ready}"
+        print_status "  Grafana pods running: ${grafana_ready}"
+        return 0
+    else
+        print_status "Monitoring stack exists but not fully ready"
+        print_status "  Prometheus pods running: ${prometheus_ready}"
+        print_status "  Grafana pods running: ${grafana_ready}"
+        return 1
+    fi
+}
+
 # Install monitoring
 install_monitoring() {
     print_status "Installing monitoring stack..."
@@ -293,7 +329,8 @@ show_deployment_status() {
     kubectl get svc -n llm-d
     echo ""
     
-    if [[ "$INSTALL_MONITORING" == "true" ]]; then
+    # Check if monitoring namespace exists (regardless of INSTALL_MONITORING flag)
+    if kubectl get namespace llm-d-monitoring &> /dev/null; then
         # Monitoring status
         print_status "Monitoring Status:"
         kubectl get pods -n llm-d-monitoring
@@ -352,7 +389,12 @@ main() {
     
     # Install monitoring if requested
     if [[ "$INSTALL_MONITORING" == "true" ]]; then
-        install_monitoring
+        if check_monitoring_status; then
+            print_success "Monitoring stack is already ready, skipping installation"
+        else
+            print_status "Installing monitoring stack..."
+            install_monitoring
+        fi
     fi
     
     # Show status
@@ -362,9 +404,9 @@ main() {
     echo ""
     echo "💡 Next Steps:"
     echo "  1. Test the deployment: cd ${QUICKSTART_DIR} && ./test-request.sh"
-    if [[ "$INSTALL_MONITORING" == "true" ]]; then
+    if kubectl get namespace llm-d-monitoring &> /dev/null; then
         echo "  2. Access Grafana: kubectl port-forward -n llm-d-monitoring svc/prometheus-grafana 3000:80"
-        echo "  3. Open http://localhost:3000 (admin/prom-operator)"
+        echo "  3. Open http://localhost:3000 (admin/password from above)"
     fi
     echo ""
 }

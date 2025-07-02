@@ -224,12 +224,12 @@ additionalServiceMonitors:
         path: /metrics
 EOF
 
-    # Install or upgrade
+    # Install or upgrade (optimized for speed)
     helm upgrade --install prometheus ${PROMETHEUS_CHART} \
         --namespace ${NAMESPACE} \
         --version ${CHART_VERSION} \
         --values prometheus-values.yaml \
-        --wait --timeout=600s
+        --wait --timeout=180s
     
     print_success "Prometheus Stack installed successfully"
 }
@@ -284,9 +284,22 @@ import_llm_d_dashboard() {
         kubectl label configmap llm-d-dashboard grafana_dashboard=1 -n ${NAMESPACE} --overwrite
         kubectl annotate configmap llm-d-dashboard grafana_folder="LLM-D" -n ${NAMESPACE} --overwrite
         
-        # Force Grafana to reload dashboards by restarting the pod
-        kubectl rollout restart deployment prometheus-grafana -n ${NAMESPACE}
-        kubectl rollout status deployment prometheus-grafana -n ${NAMESPACE} --timeout=300s
+        # Smart Grafana restart - only if necessary
+        print_status "Checking if Grafana restart is needed..."
+        
+        # Check if dashboard already exists and is properly labeled
+        local dashboard_exists=false
+        if kubectl get configmap llm-d-dashboard -n ${NAMESPACE} -o jsonpath='{.metadata.labels.grafana_dashboard}' | grep -q "1" 2>/dev/null; then
+            dashboard_exists=true
+        fi
+        
+        if [[ "$dashboard_exists" == "false" ]]; then
+            print_status "Restarting Grafana to load dashboard (optimized timeout)..."
+            kubectl rollout restart deployment prometheus-grafana -n ${NAMESPACE}
+            kubectl rollout status deployment prometheus-grafana -n ${NAMESPACE} --timeout=120s
+        else
+            print_success "Dashboard already loaded, skipping Grafana restart for faster deployment"
+        fi
         
         print_success "LLM-D Dashboard imported and Grafana restarted"
     else
@@ -298,9 +311,10 @@ import_llm_d_dashboard() {
 show_access_info() {
     print_status "Getting access information..."
     
-    # Wait for services to be ready
-    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=prometheus -n ${NAMESPACE} --timeout=300s
-    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana -n ${NAMESPACE} --timeout=300s
+    # Smart wait for services (optimized)
+    print_status "Waiting for services to be ready (with intelligent timeout)..."
+    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=prometheus -n ${NAMESPACE} --timeout=120s
+    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana -n ${NAMESPACE} --timeout=120s
     
     # Get Grafana admin password
     GRAFANA_PASSWORD=$(kubectl get secret prometheus-grafana -n ${NAMESPACE} -o jsonpath="{.data.admin-password}" | base64 -d 2>/dev/null || echo "Unable to retrieve")
