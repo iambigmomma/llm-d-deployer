@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 MODE=${1:-apply}
-TAG=1.26-alpha.9befed2f1439d883120f8de70fd70d84ca0ebc3d
+TAG=1.27-alpha.0551127f00634403cddd4634567e65a8ecc499a7
 HUB=gcr.io/istio-testing
 
 if [[ "$MODE" == "apply" ]]; then
