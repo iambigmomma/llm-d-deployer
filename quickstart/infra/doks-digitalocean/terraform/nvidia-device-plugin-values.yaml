@@ -1,0 +1,17 @@
+runtimeClassName: nvidia
+migStrategy: none
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+
+nodeSelector:
+  doks.digitalocean.com/gpu-brand: nvidia

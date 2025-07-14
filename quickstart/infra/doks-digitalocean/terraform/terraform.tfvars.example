@@ -1,0 +1,69 @@
+# DigitalOcean Configuration
+# Get your token from: https://cloud.digitalocean.com/account/api/tokens
+do_token = "dop_v1_your_digitalocean_token_here"
+
+# Cluster Basic Configuration
+cluster_name   = "llm-d-cluster"
+cluster_region = "tor1"  # Options: nyc1, nyc2, nyc3, ams1, ams2, ams3, sfo1, sfo2, sfo3, sgp1, lon1, fra1, tor1, blr1, syd1
+environment    = "dev"   # Options: dev, staging, prod, test
+project_name   = "llm-d"
+
+# VPC Configuration
+use_default_vpc = true   # Set to false to create a custom VPC
+# vpc_name = "llm-d-vpc"  # Only used if use_default_vpc = false
+
+# CPU Node Pool Configuration
+cpu_node_pool_name = "cpu-pool"
+cpu_node_size      = "s-2vcpu-4gb"  # Options: s-1vcpu-2gb, s-2vcpu-4gb, s-4vcpu-8gb, etc.
+cpu_node_count     = 2
+
+# GPU Node Pool Configuration
+gpu_node_pool_name = "gpu-pool"
+gpu_node_size      = "gpu-6000adax1-48gb"  # Options: gpu-4000adax1-48gb, gpu-6000adax1-48gb, gpu-l40sx1-48gb
+gpu_node_count     = 2
+
+# NVIDIA Device Plugin Configuration
+nvidia_device_plugin_namespace = "nvidia-device-plugin"
+nvidia_device_plugin_version   = "v0.14.5"
+
+# Advanced Configuration
+enable_monitoring  = true
+enable_auto_upgrade = false
+maintenance_day    = "sunday"
+maintenance_time   = "04:00"
+
+# Additional tags and labels
+tags = ["llm-d", "gpu-cluster", "kubernetes"]
+additional_labels = {
+  "managed-by" = "terraform"
+  "purpose"    = "llm-inference"
+}
+
+# Kubernetes Version (optional - will use latest if not specified)
+# kubernetes_version_prefix = "1.29."
+
+# =================================================================
+# GPU Node Size Guide:
+# =================================================================
+# gpu-4000adax1-48gb  - RTX 4000 Ada, 48GB RAM  (~$700/month)
+# gpu-6000adax1-48gb  - RTX 6000 Ada, 48GB RAM  (~$1000/month)  
+# gpu-l40sx1-48gb     - L40S, 48GB RAM          (~$1400/month)
+#
+# CPU Node Size Guide:
+# =================================================================
+# s-1vcpu-2gb     - 1 vCPU, 2GB RAM   (~$12/month)
+# s-2vcpu-4gb     - 2 vCPU, 4GB RAM   (~$24/month)
+# s-4vcpu-8gb     - 4 vCPU, 8GB RAM   (~$48/month)
+# s-8vcpu-16gb    - 8 vCPU, 16GB RAM  (~$96/month)
+#
+# DigitalOcean Regions:
+# =================================================================
+# nyc1, nyc2, nyc3  - New York
+# ams1, ams2, ams3  - Amsterdam  
+# sfo1, sfo2, sfo3  - San Francisco
+# sgp1              - Singapore
+# lon1              - London
+# fra1              - Frankfurt
+# tor1              - Toronto
+# blr1              - Bangalore
+# syd1              - Sydney 
