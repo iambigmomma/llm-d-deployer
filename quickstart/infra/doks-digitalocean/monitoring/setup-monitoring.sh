@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# LLM-D Monitoring Setup Script for DigitalOcean Kubernetes
+# llm-d Monitoring Setup Script for DigitalOcean Kubernetes
 # Installs Prometheus, Grafana, and custom dashboards
 
 set -euo pipefail
 
-echo "🚀 Setting up LLM-D Monitoring Stack..."
+echo "🚀 Setting up llm-d Monitoring Stack..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -87,7 +87,7 @@ install_prometheus_stack() {
     
     # Create values file for prometheus stack
     cat <<EOF > prometheus-values.yaml
-# Prometheus Stack Configuration for LLM-D
+# Prometheus Stack Configuration for llm-d
 global:
   imageRegistry: ""
 
@@ -109,7 +109,7 @@ prometheus:
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorSelector: {}
     
-    # Additional scrape configs for LLM-D
+    # Additional scrape configs for llm-d
     additionalScrapeConfigs:
       - job_name: 'llm-d-modelservice'
         kubernetes_sd_configs:
@@ -234,9 +234,9 @@ EOF
     print_success "Prometheus Stack installed successfully"
 }
 
-# Create LLM-D specific ServiceMonitor
+# Create llm-d specific ServiceMonitor
 create_llm_d_service_monitor() {
-    print_status "Creating LLM-D ServiceMonitor..."
+    print_status "Creating llm-d ServiceMonitor..."
     
     cat <<EOF | kubectl apply -f -
 apiVersion: monitoring.coreos.com/v1
@@ -260,12 +260,12 @@ spec:
       honorLabels: true
 EOF
     
-    print_success "LLM-D ServiceMonitor created"
+    print_success "llm-d ServiceMonitor created"
 }
 
-# Import LLM-D Dashboard
+# Import llm-d Dashboard
 import_llm_d_dashboard() {
-    print_status "Importing LLM-D Dashboard..."
+    print_status "Importing llm-d Dashboard..."
     
     # Wait for Grafana to be ready
     kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana -n ${NAMESPACE} --timeout=300s
@@ -282,7 +282,7 @@ import_llm_d_dashboard() {
         
         # Add required labels and annotations for Grafana Sidecar
         kubectl label configmap llm-d-dashboard grafana_dashboard=1 -n ${NAMESPACE} --overwrite
-        kubectl annotate configmap llm-d-dashboard grafana_folder="LLM-D" -n ${NAMESPACE} --overwrite
+        kubectl annotate configmap llm-d-dashboard grafana_folder="llm-d" -n ${NAMESPACE} --overwrite
         
         # Smart Grafana restart - only if necessary
         print_status "Checking if Grafana restart is needed..."
@@ -301,7 +301,7 @@ import_llm_d_dashboard() {
             print_success "Dashboard already loaded, skipping Grafana restart for faster deployment"
         fi
         
-        print_success "LLM-D Dashboard imported and Grafana restarted"
+        print_success "llm-d Dashboard imported and Grafana restarted"
     else
         print_warning "llm-d-dashboard.json not found, skipping dashboard import"
     fi
@@ -351,7 +351,7 @@ show_access_info() {
     echo "  # Check monitoring pods"
     echo "  kubectl get pods -n ${NAMESPACE}"
     echo ""
-    echo "  # View LLM-D metrics"
+    echo "  # View llm-d metrics"
     echo "  kubectl get servicemonitor -n ${NAMESPACE}"
     echo ""
 }
@@ -364,7 +364,7 @@ cleanup() {
 
 # Main execution
 main() {
-    echo "🚀 LLM-D Monitoring Setup"
+    echo "🚀 llm-d Monitoring Setup"
     echo "=========================="
     echo ""
     

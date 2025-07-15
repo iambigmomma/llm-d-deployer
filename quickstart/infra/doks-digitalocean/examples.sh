@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# LLM-D Examples for DigitalOcean Kubernetes
+# llm-d Examples for DigitalOcean Kubernetes
 # This script provides examples of how to use different GPU configurations
 
 set -euo pipefail
@@ -26,7 +26,7 @@ print_example() {
     echo ""
 }
 
-print_header "🚀 LLM-D Deployment Examples for DigitalOcean"
+print_header "🚀 llm-d Deployment Examples for DigitalOcean"
 
 echo "Before running any deployment, make sure you have:"
 echo "✅ A DigitalOcean Kubernetes cluster with GPU nodes"

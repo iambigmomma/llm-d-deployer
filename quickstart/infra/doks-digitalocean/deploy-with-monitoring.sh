@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# LLM-D Deployment Script with Monitoring for DigitalOcean Kubernetes
+# llm-d Deployment Script with Monitoring for DigitalOcean Kubernetes
 # Supports multiple GPU configurations and automatic monitoring setup
 
 set -euo pipefail
@@ -44,7 +44,7 @@ print_error() {
 # Show usage
 show_usage() {
     cat << EOF
-🚀 LLM-D Deployment Script for DigitalOcean Kubernetes
+🚀 llm-d Deployment Script for DigitalOcean Kubernetes
 
 Usage: $0 [OPTIONS]
 
@@ -52,7 +52,7 @@ Options:
     -g, --gpu TYPE          GPU type (rtx-4000-ada, rtx-6000-ada, l40s)
     -t, --token TOKEN       HuggingFace token (required)
     -m, --no-monitoring     Skip monitoring installation
-    -u, --uninstall         Uninstall LLM-D and monitoring
+    -u, --uninstall         Uninstall llm-d and monitoring
     -h, --help              Show this help message
 
 GPU Types:
@@ -188,15 +188,15 @@ check_prerequisites() {
 
 # Uninstall function
 uninstall_everything() {
-    print_status "Uninstalling LLM-D and monitoring..."
+    print_status "Uninstalling llm-d and monitoring..."
     
-    # Uninstall LLM-D
-    print_status "Uninstalling LLM-D..."
+    # Uninstall llm-d
+    print_status "Uninstalling llm-d..."
     cd "$QUICKSTART_DIR"
     if ./llmd-installer.sh -u; then
-        print_success "LLM-D uninstalled successfully"
+        print_success "llm-d uninstalled successfully"
     else
-        print_warning "LLM-D uninstall had some issues"
+        print_warning "llm-d uninstall had some issues"
     fi
     
     # Uninstall monitoring
@@ -212,11 +212,11 @@ uninstall_everything() {
     print_success "🎉 Uninstallation completed!"
 }
 
-# Install LLM-D
+# Install llm-d
 install_llm_d() {
     local config_file="${GPU_CONFIGS_DIR}/${GPU_TYPE}-values.yaml"
     
-    print_status "Installing LLM-D with GPU configuration: $GPU_TYPE"
+    print_status "Installing llm-d with GPU configuration: $GPU_TYPE"
     print_status "Using config file: $config_file"
     
     cd "$QUICKSTART_DIR"
@@ -224,11 +224,11 @@ install_llm_d() {
     # Export HuggingFace token
     export HF_TOKEN="$HUGGINGFACE_TOKEN"
     
-    # Install LLM-D with GPU-specific configuration
+    # Install llm-d with GPU-specific configuration
     if ./llmd-installer.sh -f "$config_file"; then
-        print_success "LLM-D installed successfully"
+        print_success "llm-d installed successfully"
     else
-        print_error "LLM-D installation failed"
+        print_error "llm-d installation failed"
         exit 1
     fi
 }
@@ -281,15 +281,95 @@ install_monitoring() {
     # Run monitoring setup
     if ./setup-monitoring.sh; then
         print_success "Monitoring stack installed successfully"
+        
+        # Import llm-d Inference Gateway Dashboard if it exists
+        import_llm_d_dashboard
     else
         print_error "Monitoring installation failed"
         exit 1
     fi
 }
 
+# Import llm-d Inference Gateway Dashboard
+import_llm_d_dashboard() {
+    print_status "Importing llm-d Inference Gateway Dashboard..."
+    
+    local dashboard_file="${MONITORING_DIR}/llm-d-dashboard.json"
+    
+    if [[ -f "$dashboard_file" ]]; then
+        # Wait for Grafana to be ready
+        print_status "Waiting for Grafana to be ready..."
+        kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana -n llm-d-monitoring --timeout=300s
+        
+        # Check if dashboard ConfigMap already exists and is properly configured
+        local dashboard_exists=false
+        local configmap_exists=false
+        
+        if kubectl get configmap llm-d-dashboard -n llm-d-monitoring &>/dev/null; then
+            configmap_exists=true
+            # Check if it has the required labels and annotations
+            local has_label=$(kubectl get configmap llm-d-dashboard -n llm-d-monitoring -o jsonpath='{.metadata.labels.grafana_dashboard}' 2>/dev/null || echo "")
+            local has_annotation=$(kubectl get configmap llm-d-dashboard -n llm-d-monitoring -o jsonpath='{.metadata.annotations.grafana_folder}' 2>/dev/null || echo "")
+            
+            if [[ "$has_label" == "1" ]] && [[ "$has_annotation" == "llm-d" ]]; then
+                dashboard_exists=true
+            fi
+        fi
+        
+        if [[ "$dashboard_exists" == "true" ]]; then
+            print_success "✅ llm-d Inference Gateway Dashboard already configured correctly"
+            print_status "Skipping restart - Grafana sidecar should auto-detect the dashboard"
+            return 0
+        fi
+        
+        # Create or update the ConfigMap
+        if [[ "$configmap_exists" == "true" ]]; then
+            print_status "Updating existing dashboard ConfigMap..."
+            kubectl delete configmap llm-d-dashboard -n llm-d-monitoring
+        else
+            print_status "Creating new dashboard ConfigMap..."
+        fi
+        
+        # Create new ConfigMap with proper structure for Grafana Sidecar
+        kubectl create configmap llm-d-dashboard \
+            --from-file="$dashboard_file" \
+            -n llm-d-monitoring
+        
+        # Add required labels and annotations for Grafana Sidecar
+        kubectl label configmap llm-d-dashboard grafana_dashboard=1 -n llm-d-monitoring --overwrite
+        kubectl annotate configmap llm-d-dashboard grafana_folder="llm-d" -n llm-d-monitoring --overwrite
+        
+        # Give sidecar time to auto-detect the new ConfigMap
+        print_status "Waiting for Grafana sidecar to auto-detect dashboard (30 seconds)..."
+        sleep 30
+        
+        # Verify if sidecar picked up the dashboard without restart
+        print_status "Checking if Grafana sidecar loaded the dashboard automatically..."
+        
+        # Check sidecar logs for dashboard loading
+        local sidecar_loaded=false
+        if kubectl logs -l app.kubernetes.io/name=grafana -c grafana-sc-dashboard -n llm-d-monitoring --tail=50 2>/dev/null | grep -q "llm-d-dashboard"; then
+            sidecar_loaded=true
+        fi
+        
+        if [[ "$sidecar_loaded" == "true" ]]; then
+            print_success "✅ llm-d Inference Gateway Dashboard loaded automatically by sidecar"
+        else
+            print_status "Sidecar didn't auto-detect dashboard, performing smart restart..."
+            print_status "Restarting Grafana to ensure dashboard loading..."
+            kubectl rollout restart deployment prometheus-grafana -n llm-d-monitoring
+            kubectl rollout status deployment prometheus-grafana -n llm-d-monitoring --timeout=180s
+            print_success "✅ llm-d Inference Gateway Dashboard imported with restart"
+        fi
+    else
+        print_warning "llm-d dashboard file not found at: $dashboard_file"
+        print_warning "Inference Gateway dashboard will not be available"
+    fi
+}
+
 # Wait for deployment to be ready
 wait_for_deployment() {
-    print_status "Waiting for LLM-D deployment to be ready..."
+    print_status "Waiting for llm-d deployment to be ready..."
     
     # Wait for namespace to exist
     local max_wait=300
@@ -308,7 +388,7 @@ wait_for_deployment() {
     print_status "Waiting for pods to be ready (this may take several minutes)..."
     kubectl wait --for=condition=available deployment --all -n llm-d --timeout=900s
     
-    print_success "LLM-D deployment is ready"
+    print_success "llm-d deployment is ready"
 }
 
 # Show deployment status
@@ -319,13 +399,13 @@ show_deployment_status() {
     echo "=================================="
     echo ""
     
-    # LLM-D status
-    print_status "LLM-D Status:"
+    # llm-d status
+    print_status "llm-d Status:"
     kubectl get pods -n llm-d
     echo ""
     
     # Services
-    print_status "LLM-D Services:"
+    print_status "llm-d Services:"
     kubectl get svc -n llm-d
     echo ""
     
@@ -349,6 +429,12 @@ show_deployment_status() {
         echo "  Prometheus: kubectl port-forward -n llm-d-monitoring svc/prometheus-kube-prometheus-prometheus 9090:9090"
         echo "  URL: http://localhost:9090"
         echo ""
+        echo "📈 Available Dashboards:"
+        echo "  • Kubernetes Cluster Overview"
+        echo "  • Node Exporter Metrics"
+        echo "  • Kubernetes Pods"
+        echo "  • llm-d Inference Gateway (Custom)"
+        echo ""
         echo "💡 To get Grafana password later:"
         echo "  kubectl get secret prometheus-grafana -n llm-d-monitoring -o jsonpath=\"{.data.admin-password}\" | base64 -d"
         echo ""
@@ -362,7 +448,7 @@ show_deployment_status() {
 
 # Main execution
 main() {
-    echo "🚀 LLM-D Deployment for DigitalOcean Kubernetes"
+    echo "🚀 llm-d Deployment for DigitalOcean Kubernetes"
     echo "==============================================="
     echo ""
     
@@ -381,7 +467,7 @@ main() {
     print_status "  Config: ${GPU_CONFIGS_DIR}/${GPU_TYPE}-values.yaml"
     echo ""
     
-    # Install LLM-D
+    # Install llm-d
     install_llm_d
     
     # Wait for deployment
@@ -407,6 +493,8 @@ main() {
     if kubectl get namespace llm-d-monitoring &> /dev/null; then
         echo "  2. Access Grafana: kubectl port-forward -n llm-d-monitoring svc/prometheus-grafana 3000:80"
         echo "  3. Open http://localhost:3000 (admin/password from above)"
+        echo "  4. Navigate to 'llm-d' folder to view Inference Gateway dashboard"
+        echo "  5. Monitor request latency, throughput, and GPU utilization"
     fi
     echo ""
 }

@@ -70,7 +70,7 @@ Usage: ${SCRIPT_NAME} [OPTIONS]
 
 DigitalOcean GPU Kubernetes Cluster Setup Script
 This script can create a complete DOKS cluster from scratch or setup an existing cluster
-for LLM-D deployment by installing NVIDIA Device Plugin and fixing GPU node labels.
+for llm-d deployment by installing NVIDIA Device Plugin and fixing GPU node labels.
 
 🧠 SMART FEATURES:
   • Automatically detects existing cluster state and resumes from interruption points
@@ -1065,7 +1065,7 @@ main() {
     fi
     
     # Smart GPU setup with optimized parallel processing
-    log_cluster "Setting up GPU support for LLM-D deployment..."
+    log_cluster "Setting up GPU support for llm-d deployment..."
     
     # Check if NVIDIA Device Plugin needs installation/repair
     local device_plugin_needed=false
@@ -1119,14 +1119,14 @@ main() {
     
     if [[ "${CREATE_CLUSTER}" == "true" ]]; then
         log_cluster "🎯 Next Steps:"
-        echo "  1. Your cluster is ready for LLM-D deployment"
-        echo "  2. Run the optimized LLM-D deployment script:"
+        echo "  1. Your cluster is ready for llm-d deployment"
+        echo "  2. Run the optimized llm-d deployment script:"
         echo "     cd ../.. && ./deploy-with-monitoring.sh -g rtx-6000-ada -t your_hf_token"
         echo "  3. Or use the manual installer:"
         echo "     cd ../.. && ./llmd-installer.sh -f infra/doks-digitalocean/gpu-configs/rtx-6000-ada-values.yaml"
     else
         log_cluster "🎯 Next Steps:"
-        echo "  1. Your existing cluster is now ready for LLM-D deployment"
+        echo "  1. Your existing cluster is now ready for llm-d deployment"
         echo "  2. Run: ./deploy-with-monitoring.sh -g <gpu-type> -t your_hf_token"
     fi
     

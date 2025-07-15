@@ -1,4 +1,4 @@
-# LLM-D Deployment Guide for DigitalOcean GPU Kubernetes Clusters
+# llm-d Deployment Guide for DigitalOcean GPU Kubernetes Clusters
 
 ## 🚀 Quick Start
 
@@ -8,17 +8,17 @@ For experienced users who want to deploy immediately:
 # 1. Setup GPU cluster (one-time setup)
 ./setup-gpu-cluster.sh
 
-# 2. Deploy LLM-D with monitoring
+# 2. Deploy llm-d with monitoring
 ./deploy-with-monitoring.sh -g rtx-4000-ada -t your_hf_token_here
 ```
 
 ## 📖 Complete Deployment Guide
 
-This guide documents the complete journey of deploying LLM-D on DigitalOcean GPU Kubernetes clusters, including all the challenges encountered, mistakes made, and final solutions discovered through extensive testing and debugging.
+This guide documents the complete journey of deploying llm-d on DigitalOcean GPU Kubernetes clusters, including all the challenges encountered, mistakes made, and final solutions discovered through extensive testing and debugging.
 
 ### 🎯 Overview
 
-LLM-D (Large Language Model Deployment) is a Kubernetes-native solution for deploying and managing large language models with GPU acceleration. This guide specifically addresses the unique challenges of running LLM-D on DigitalOcean's GPU Kubernetes service (DOKS).
+llm-d is a Kubernetes-native solution for deploying and managing large language models with GPU acceleration. This guide specifically addresses the unique challenges of running llm-d on DigitalOcean's GPU Kubernetes service (DOKS).
 
 ### 📋 Prerequisites
 
@@ -30,7 +30,7 @@ LLM-D (Large Language Model Deployment) is a Kubernetes-native solution for depl
 
 ### 🏗️ Architecture Overview
 
-LLM-D deploys the following components:
+llm-d deploys the following components:
 
 - **PreFill Pod**: Handles prompt processing and initial token generation
 - **Decode Pod**: Handles autoregressive token generation
@@ -218,7 +218,7 @@ Select the appropriate configuration based on your GPU nodes:
 | NVIDIA RTX 6000 Ada | 48GB | `gpu-configs/rtx-6000-ada-values.yaml` | 16,384              | Medium to large models     |
 | NVIDIA L40S         | 48GB | `gpu-configs/l40s-values.yaml`         | 20,480              | High-performance inference |
 
-### Step 3: Deploy LLM-D
+### Step 3: Deploy llm-d
 
 ```bash
 # Get your HuggingFace token from https://huggingface.co/settings/tokens
@@ -423,7 +423,7 @@ kubectl get secret llm-d-hf-token -n llm-d -o yaml
 kubectl get nodes
 kubectl get pods --all-namespaces
 
-# LLM-D specific debugging
+# llm-d specific debugging
 kubectl get pods -n llm-d
 kubectl logs -n llm-d deployment/meta-llama-llama-3-2-3b-instruct-decode -c vllm
 kubectl describe pod -n llm-d -l llm-d.ai/inferenceServing=true
@@ -444,7 +444,7 @@ kubectl logs -n llm-d-monitoring deployment/prometheus-grafana
 The deployment includes a comprehensive monitoring solution:
 
 - **Prometheus**: Metrics collection and storage
-- **Grafana**: Visualization dashboards with pre-configured LLM-D dashboard
+- **Grafana**: Visualization dashboards with pre-configured llm-d dashboard
 - **AlertManager**: Alert handling and notifications
 - **Node Exporter**: Node-level metrics collection
 - **GPU Metrics**: NVIDIA GPU utilization and memory usage
@@ -573,14 +573,14 @@ When reporting issues, please include:
 
 - GPU model and VRAM amount
 - Kubernetes version
-- LLM-D version
+- llm-d version
 - Complete error logs
 - Output of `kubectl get pods -n llm-d`
 - Results of `kubectl describe nodes`
 
 ## 📚 Additional Resources
 
-- [LLM-D Documentation](../../README.md)
+- [llm-d Documentation](../../README.md)
 - [NVIDIA Device Plugin](https://github.com/NVIDIA/k8s-device-plugin)
 - [DigitalOcean GPU Kubernetes](https://docs.digitalocean.com/products/kubernetes/how-to/add-gpu-nodes/)
 - [Kubernetes GPU Scheduling](https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/)
@@ -605,9 +605,9 @@ For issues specific to this DigitalOcean deployment:
 3. Ensure GPU configurations match your hardware
 4. Check monitoring dashboards for resource usage
 
-For general LLM-D issues:
+For general llm-d issues:
 
-- Review the main LLM-D documentation
+- Review the main llm-d documentation
 - Check GitHub issues
 - Consult VLLM documentation for model-specific issues
 
@@ -623,4 +623,4 @@ This guide represents months of real-world testing and debugging on DigitalOcean
 4. **Monitoring is Crucial**: Use the included Grafana dashboards
 5. **Test Thoroughly**: Validate each configuration before production
 
-By following this guide, you can avoid the pitfalls we encountered and successfully deploy LLM-D on DigitalOcean GPU clusters.
+By following this guide, you can avoid the pitfalls we encountered and successfully deploy llm-d on DigitalOcean GPU clusters.
